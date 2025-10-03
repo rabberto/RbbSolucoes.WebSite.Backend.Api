@@ -12,20 +12,12 @@ builder.AddAppSettingsConfiguration();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapControllers();
-}
-
-app.UseHttpsRedirection();
-
-app.UseBasicAuthentication();
-
-app.UseApiConfiguration();
-
-app.UseCors("AllowAll");
-
-app.UseMigration();
+app.UseHttpsRedirection();    // 1. HTTPS Redirect
+app.UseRouting();             // 2. Routing
+app.UseBasicAuthentication(); // 3. ✅ Autenticação Básica
+app.UseApiConfiguration();    // 4. Swagger, Rate Limiter, etc.
+app.UseCors("AllowAll");      // 5. CORS
+app.UseAuthorization();       // 6. Authorization
+app.MapControllers();         // 7. ✅ Mapeamento de Controllers
 
 app.Run();

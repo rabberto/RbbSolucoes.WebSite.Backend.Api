@@ -56,7 +56,7 @@ public static class ApiConfiguration
                 Type = SecuritySchemeType.Http,
                 Scheme = "basic",
                 In = ParameterLocation.Header,
-                Description = "Basic Authorization header using the Bearer scheme."
+                Description = "Insira as credenciais de autenticação básica."
             });
 
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -107,18 +107,16 @@ public static class ApiConfiguration
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
-            //c.SwaggerEndpoint("/fraude-naf-hub-antifraude-api-dotnet/swagger/v1/swagger.json", "fraude-naf-hub-antifraude-api-dotnet v1");
+            c.SwaggerEndpoint("/swagger/v1/swagger.json", "RbbSolucoes.Website.Backend.Api v1");
+            c.DocumentTitle = "RbbSolucoes API";
+            c.EnableDeepLinking();
+            c.DisplayOperationId();
+            c.DisplayRequestDuration();
         });
 
-        app.UseHttpsRedirection();
-        app.UseRouting();
-        app.UseAuthorization();
         app.UseRateLimiter();
 
-        app.MapControllers();
         app.UseHealthChecks("/health");
-
-
         return app;
     }
 

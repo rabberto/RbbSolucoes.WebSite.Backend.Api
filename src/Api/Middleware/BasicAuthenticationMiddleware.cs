@@ -55,8 +55,7 @@ public class BasicAuthenticationMiddleware
 
             using var scope = _serviceProvider.CreateScope();
             var appSettings = scope.ServiceProvider.GetRequiredService<AppSettings>();
-
-            if (!ValidateCredentials(username, password, appSettings))
+           if (!ValidateCredentials(username, password, appSettings))
             {
                 await HandleUnauthorized(context);
                 return;
@@ -75,8 +74,9 @@ public class BasicAuthenticationMiddleware
 
             await _next(context);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[AUTH ERROR] {ex.Message}");
             await HandleUnauthorized(context);
         }
     }
@@ -90,7 +90,23 @@ public class BasicAuthenticationMiddleware
     private static async Task HandleUnauthorized(HttpContext context)
     {
         context.Response.StatusCode = 401;
-        context.Response.Headers.WWWAuthenticate = "Basic realm=\"API\"";
+        
+        // Não enviar WWW-Authenticate header se a requisição vier do Swagger
+        // Isso evita o dialog do navegador durante testes no Swagger UI
+        var userAgent = context.Request.Headers.UserAgent.ToString();
+        var referer = context.Request.Headers.Referer.ToString();
+        
+        // Detectar se é uma requisição do Swagger UI
+        bool isSwaggerRequest = userAgent.Contains("swagger", StringComparison.OrdinalIgnoreCase) ||
+                               referer.Contains("swagger", StringComparison.OrdinalIgnoreCase) ||
+                               context.Request.Path.StartsWithSegments("/swagger") ||
+                               context.Request.Headers.ContainsKey("X-Requested-With");
+        
+        if (!isSwaggerRequest)
+        {
+            context.Response.Headers.WWWAuthenticate = "Basic realm=\"API\"";
+        }
+        
         await context.Response.WriteAsync("Unauthorized");
     }
 }

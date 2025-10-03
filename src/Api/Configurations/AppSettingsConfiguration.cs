@@ -17,5 +17,8 @@ public static class AppSettingsConfiguration
         var appSettings = builder.Configuration.Get<AppSettings>() ?? throw new Exception("AppSettings not found");
 
         AppSettings.Initialize(appSettings);
+        
+        // Registrar também como serviço para DI
+        builder.Services.AddSingleton(appSettings);
     }
 }
