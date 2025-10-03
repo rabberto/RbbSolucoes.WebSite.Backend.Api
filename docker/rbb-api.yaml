@@ -1,0 +1,45 @@
+services:
+  rbb-website-api:
+    build:
+      context: /mnt/c/study/RbbSolucoes.Website.Backend.Api
+      dockerfile: Dockerfile
+    container_name: rbb-website-api
+    ports:
+      - "5045:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDB=mongodb://mongodb:27017/rbbsolucoes
+    networks:
+      - local-default
+      - local-database
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB para a API (se não estiver usando o existente)
+  mongodb:
+    image: mongo:7.0
+    container_name: rbb-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=rbbsolucoes
+    volumes:
+      - rbb_mongodb_data:/data/db
+      - /mnt/c/study/RbbSolucoes.Website.Backend.Api/docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - local-database
+    restart: unless-stopped
+
+volumes:
+  rbb_mongodb_data:
+    name: rbb_mongodb_data

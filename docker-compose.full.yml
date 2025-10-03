@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # API Service
+  rbb-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rbb-website-api
+    ports:
+      - "5045:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+    depends_on:
+      - mongodb
+    networks:
+      - rbb-network
+    restart: unless-stopped
+
+  # MongoDB Service
+  mongodb:
+    image: mongo:7.0
+    container_name: rbb-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password123
+      - MONGO_INITDB_DATABASE=rbbsolucoes
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - rbb-network
+    restart: unless-stopped
+
+  # MongoDB Web UI (optional)
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: rbb-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password123
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:password123@mongodb:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin123
+    depends_on:
+      - mongodb
+    networks:
+      - rbb-network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+
+networks:
+  rbb-network:
+    driver: bridge
