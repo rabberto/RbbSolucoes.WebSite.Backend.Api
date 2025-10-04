@@ -19,5 +19,5 @@ app.UseApiConfiguration();    // 4. Swagger, Rate Limiter, etc.
 app.UseCors("AllowAll");      // 5. CORS
 app.UseAuthorization();       // 6. Authorization
 app.MapControllers();         // 7. ✅ Mapeamento de Controllers
-
+app.UseMigration();
 app.Run();

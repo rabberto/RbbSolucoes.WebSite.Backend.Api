@@ -23,18 +23,22 @@ public static class DatabaseConfiguration
 
         services.AddSingleton<IMongoClient>(sp =>
         {
-            MongoClientSettings settings = MongoClientSettings.FromConnectionString(_connectionString);
+            MongoClientSettings mongoSettings = MongoClientSettings.FromConnectionString(_connectionString);
 
-            settings.LoggingSettings = new LoggingSettings(sp.GetRequiredService<ILoggerFactory>());
+            mongoSettings.ConnectTimeout = TimeSpan.FromSeconds(30);
+            mongoSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(30);
+            mongoSettings.SocketTimeout = TimeSpan.FromSeconds(30);
 
-            settings.SslSettings = new SslSettings
+            mongoSettings.LoggingSettings = new LoggingSettings(sp.GetRequiredService<ILoggerFactory>());
+
+            mongoSettings.SslSettings = new SslSettings
             {
                 EnabledSslProtocols = SslProtocols.Tls12
             };
 
-            settings.WaitQueueTimeout = TimeSpan.FromSeconds(30);
+            mongoSettings.WaitQueueTimeout = TimeSpan.FromSeconds(30);
 
-            return new MongoClient(settings);
+            return new MongoClient(mongoSettings);
         });
 
         BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
