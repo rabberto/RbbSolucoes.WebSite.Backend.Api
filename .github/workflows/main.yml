@@ -7,8 +7,6 @@ on:
 
 jobs:
   CI:
-    runs-on: ubuntu-lastet
+    runs-on: ubuntu-latest
     steps:
       - run: echo "Teste"
-      
-  
