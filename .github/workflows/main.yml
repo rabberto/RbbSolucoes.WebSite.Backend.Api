@@ -26,7 +26,7 @@ jobs:
           context: ./src
           file: ./Dockerfile
           push: true
-          tags:
+          tags: |
             rabberto/website-api:v1
             rabberto/website-api:latest
             
