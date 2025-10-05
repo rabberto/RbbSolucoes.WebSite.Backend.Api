@@ -27,8 +27,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags:
-            rabberto/website.api:v1
-            rabberto/website.api:latest
+            rabberto/website-api:v1
+            rabberto/website-api:latest
             
           
 
