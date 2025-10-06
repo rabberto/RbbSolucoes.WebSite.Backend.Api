@@ -33,8 +33,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            rabberto/website-api:${{ steps.date.outputs.date }}.${{ github.run_number }}
-            rabberto/website-api:latest
+            rabberto/website-rbbsolucoes:${{ steps.date.outputs.date }}.${{ github.run_number }}
+            rabberto/website-rbbsolucoes:latest
       
   CD:
     needs: CI
@@ -51,7 +51,7 @@ jobs:
       - name: Azure Container Apps Build and Deploy
         uses: azure/container-apps-deploy-action@v1
         with:
-          imageToDeploy: rabberto/website-api:${{ needs.CI.outputs.image-tag }}
-          containerAppName: 'website-api'
+          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.CI.outputs.image-tag }}
+          containerAppName: 'website-rbbsolucoes'
           resourceGroup: 'website-rbb-rc'
           containerAppEnvironment: ${{ secrets.AZURE_CONTAINER_APP_ENVIRONMENT }}
