@@ -8,6 +8,8 @@ on:
 jobs:
   CI:
     runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.date.outputs.date }}.${{ github.run_number }}
     steps:
       - run: echo "Teste"
 
@@ -49,10 +51,7 @@ jobs:
       - name: Azure Container Apps Build and Deploy
         uses: azure/container-apps-deploy-action@v1
         with:
-          image: rabberto/website-api:${{ steps.date.outputs.date }}.${{ github.run_number }}
-          container-name: 'website-api'
-          resource-group: 'website-rbb-rc'
-            
-          
-
-          
+          imageToDeploy: rabberto/website-api:${{ needs.CI.outputs.image-tag }}
+          containerAppName: 'website-api'
+          resourceGroup: 'website-rbb-rc'
+          containerAppEnvironment: ${{ secrets.AZURE_CONTAINER_APP_ENVIRONMENT }}
