@@ -47,7 +47,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
         
       - name: Azure Container Apps Build and Deploy
-        uses: azure/aci-deploy@v1.3.0
+        uses: azure/container-apps-deploy-action@v1
         with:
           image: rabberto/website-api:${{ steps.date.outputs.date }}.${{ github.run_number }}
           container-name: 'website-api'
