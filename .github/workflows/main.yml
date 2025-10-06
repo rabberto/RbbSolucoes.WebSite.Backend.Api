@@ -33,6 +33,25 @@ jobs:
           tags: |
             rabberto/website-api:${{ steps.date.outputs.date }}.${{ github.run_number }}
             rabberto/website-api:latest
+      
+  CD:
+    needs: CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.0
+
+      - name: Azure Login
+        uses: azure/login@v1.4.6
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+        
+      - name: Azure Container Apps Build and Deploy
+        uses: azure/aci-deploy@v1.3.0
+        with:
+          image: rabberto/website-api:${{ steps.date.outputs.date }}.${{ github.run_number }}
+          container-name: 'website-api'
+          resource-group: 'website-rbb-rc'
             
           
 
