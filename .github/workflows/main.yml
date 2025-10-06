@@ -55,3 +55,10 @@ jobs:
           containerAppName: 'website-rbbsolucoes'
           resourceGroup: 'website-rbb-rc'
           containerAppEnvironment: ${{ secrets.AZURE_CONTAINER_APP_ENVIRONMENT }}
+          replaceExistingImage: true
+          waitForDeployment: true
+          timeout: '600'
+          rolloutStrategy: 'auto'
+          cpu: '0.5'
+          memory: '512Mi'
+          minReplicas: '1'
