@@ -59,6 +59,8 @@ jobs:
           waitForDeployment: true
           timeout: '600'
           rolloutStrategy: 'auto'
-          cpu: '0.5'
+          cpu: '0.25'
           memory: '512Mi'
           minReplicas: '1'
+          targetPort: '80'
+          ingress: 'external'
