@@ -27,7 +27,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            rabberto/website-api:v1
+            rabberto/website-api: ${{ github.run_date }}_${{ github.run_number}}
             rabberto/website-api:latest
             
           
