@@ -47,6 +47,11 @@ jobs:
         uses: azure/login@v1.4.6
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Container App Environment (if not exists)
+        run: |
+          az containerapp env show --name "website-rbb-env" --resource-group "website-rbb-rc" || \
+          az containerapp env create --name "website-rbb-env" --resource-group "website-rbb-rc" --location "East US"
         
       - name: Azure Container Apps Build and Deploy
         uses: azure/container-apps-deploy-action@v1
@@ -54,11 +59,10 @@ jobs:
           imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.CI.outputs.image-tag }}
           containerAppName: 'website-rbbsolucoes'
           resourceGroup: 'website-rbb-rc'
-          containerAppEnvironment: ${{ secrets.AZURE_CONTAINER_APP_ENVIRONMENT }}
+          containerAppEnvironment: 'website-rbb-env'
           replaceExistingImage: true
           waitForDeployment: true
           timeout: '600'
-          rolloutStrategy: 'auto'
           cpu: '0.25'
           memory: '512Mi'
           minReplicas: '1'
