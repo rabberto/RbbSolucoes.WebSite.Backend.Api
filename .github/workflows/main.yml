@@ -66,5 +66,5 @@ jobs:
           cpu: '0.25'
           memory: '512Mi'
           minReplicas: '1'
-          targetPort: '80'
+          targetPort: '8080'
           ingress: 'external'
