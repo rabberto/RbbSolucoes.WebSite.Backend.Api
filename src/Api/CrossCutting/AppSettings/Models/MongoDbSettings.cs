@@ -23,6 +23,11 @@ public sealed class MongoDbSettings
 
     public string GetFormattedConnectionString()
     {
+        Console.WriteLine("ConnectionString: " + ConnectionString);
+        Console.WriteLine("User: " + User);
+        Console.WriteLine("DatabaseName: " + DatabaseName);
+        Console.WriteLine("Password: " + (string.IsNullOrWhiteSpace(Password) ? "Not Set" : "Set"));
+        
         if (string.IsNullOrWhiteSpace(ConnectionString) ||
         string.IsNullOrWhiteSpace(User) ||
         string.IsNullOrWhiteSpace(Password) ||
