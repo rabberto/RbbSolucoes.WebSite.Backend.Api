@@ -94,8 +94,11 @@ jobs:
         run: |
           echo "=== Environment variables after update ==="
           az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.template.containers[0].env[].name" -o table
+          echo "=== Get active revision ==="
+          REVISION=$(az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.latestRevisionName" -o tsv)
+          echo "Active revision: $REVISION"
           echo "=== Restart container to apply changes ==="
-          az containerapp revision restart --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg'
+          az containerapp revision restart --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --revision "$REVISION"
 
       - name: Final Verification
         run: |
