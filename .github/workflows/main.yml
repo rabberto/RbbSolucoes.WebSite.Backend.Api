@@ -52,15 +52,6 @@ jobs:
             az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
           fi
 
-      - name: Debug Secrets and Environment
-        run: |
-          echo "=== Debugging Secrets ==="
-          echo "MONGODB_CONNECTION_STRING exists: ${{ secrets.MONGODB_CONNECTION_STRING != '' }}"
-          echo "MONGODB_DATABASE_NAME exists: ${{ secrets.MONGODB_DATABASE_NAME != '' }}"
-          echo "BASIC_AUTH_USERNAME exists: ${{ secrets.BASIC_AUTH_USERNAME != '' }}"
-          echo "BASIC_AUTH_PASSWORD exists: ${{ secrets.BASIC_AUTH_PASSWORD != '' }}"
-          echo "=========================="
-
       - name: Azure Container Apps Build and Deploy
         uses: azure/container-apps-deploy-action@v1
         with:
@@ -77,9 +68,8 @@ jobs:
           targetPort: '8080'
           ingress: 'external'
 
-      - name: Set Environment Variables After Deploy
+      - name: Set Environment Variables
         run: |
-          echo "=== Setting environment variables after deployment ==="
           az containerapp update \
             --name 'website-rbbsolucoes' \
             --resource-group 'rbb-website-rg' \
@@ -89,16 +79,6 @@ jobs:
               mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
               basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
               basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
-
-      - name: Verify Environment Variables After Update
-        run: |
-          echo "=== Environment variables after update ==="
-          az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.template.containers[0].env[].name" -o table
-          echo "=== Get active revision ==="
-          REVISION=$(az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.latestRevisionName" -o tsv)
-          echo "Active revision: $REVISION"
-          echo "=== Restart container to apply changes ==="
-          az containerapp revision restart --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --revision "$REVISION"
 
       # - name: Final Verification
       #   run: |
