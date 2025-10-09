@@ -1,5 +1,10 @@
 using RbbSolucoes.Website.Backend.Api.Configurations;
+using Serilog;
 
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateLogger();
+    
 var builder = WebApplication.CreateBuilder(args);
 
 var services = builder.Services;
@@ -9,6 +14,8 @@ services.AddBasicAuthentication();
 services.AddDependencyResolver();
 services.AddDatabaseConfiguration();
 builder.AddAppSettingsConfiguration();
+
+builder.Host.UseSerilog();
 
 var app = builder.Build();
 

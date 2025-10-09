@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using Serilog;
 
 namespace RbbSolucoes.Website.Backend.Api.CrossCutting.AppSettings.Models;
 
@@ -23,6 +24,12 @@ public sealed class MongoDbSettings
 
     public string GetFormattedConnectionString()
     {
+        Log.Information("Checking MongoDB settings...");
+        Log.Information("ConnectionString exists: {ConnectionString}", ConnectionString);
+        Log.Information("User: {User}", User);
+        Log.Information("DatabaseName: {DatabaseName}", DatabaseName);
+        Log.Information("Password exists: Password", Password);
+
         if (string.IsNullOrWhiteSpace(ConnectionString) ||
         string.IsNullOrWhiteSpace(User) ||
         string.IsNullOrWhiteSpace(Password) ||
