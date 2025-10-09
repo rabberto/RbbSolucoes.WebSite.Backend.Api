@@ -28,7 +28,7 @@ public sealed class MongoDbSettings
         string.IsNullOrWhiteSpace(Password) ||
         string.IsNullOrWhiteSpace(DatabaseName))
         {
-            throw new InvalidOperationException("MongoDbSettings properties are not properly set.");
+            throw new InvalidOperationException("MongoDbSettings properties are not properly set");
         }
 
         return string.Format(ConnectionString, User, Password, DatabaseName);
