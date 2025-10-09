@@ -15,7 +15,7 @@ services.AddApiConfiguration();
 services.AddBasicAuthentication();
 //services.AddLoggingConfiguration();
 services.AddDependencyResolver();
-services.AddDatabaseConfiguration();
+// services.AddDatabaseConfiguration();
 
 var app = builder.Build();
 
@@ -26,5 +26,5 @@ app.UseApiConfiguration();    // 4. Swagger, Rate Limiter, etc.
 app.UseCors("AllowAll");      // 5. CORS
 app.UseAuthorization();       // 6. Authorization
 app.MapControllers();         // 7. ✅ Mapeamento de Controllers
-app.UseMigration();
+// app.UseMigration();
 app.Run();
