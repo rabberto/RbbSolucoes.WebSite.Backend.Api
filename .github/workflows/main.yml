@@ -57,8 +57,6 @@ jobs:
           echo "=== Debugging Secrets ==="
           echo "MONGODB_CONNECTION_STRING exists: ${{ secrets.MONGODB_CONNECTION_STRING != '' }}"
           echo "MONGODB_DATABASE_NAME exists: ${{ secrets.MONGODB_DATABASE_NAME != '' }}"
-          echo "MONGODB_USER exists: ${{ secrets.MONGODB_USER != '' }}"
-          echo "MONGODB_PASSWORD exists: ${{ secrets.MONGODB_PASSWORD != '' }}"
           echo "BASIC_AUTH_USERNAME exists: ${{ secrets.BASIC_AUTH_USERNAME != '' }}"
           echo "BASIC_AUTH_PASSWORD exists: ${{ secrets.BASIC_AUTH_PASSWORD != '' }}"
           echo "=========================="
@@ -82,7 +80,5 @@ jobs:
             ASPNETCORE_ENVIRONMENT=Production
             mongoDbSettings__connectionString=${{ secrets.MONGODB_CONNECTION_STRING }}
             mongoDbSettings__databaseName=${{ secrets.MONGODB_DATABASE_NAME }}
-            mongoDbSettings__user=${{ secrets.MONGODB_USER }}
-            mongoDbSettings__password=${{ secrets.MONGODB_PASSWORD }}
             basicAuth__username=${{ secrets.BASIC_AUTH_USERNAME }}
             basicAuth__password=${{ secrets.BASIC_AUTH_PASSWORD }}

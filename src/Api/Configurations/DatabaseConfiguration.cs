@@ -19,11 +19,13 @@ public static class DatabaseConfiguration
 
     public static IServiceCollection AddDatabaseConfiguration(this IServiceCollection services)
     {
+        string connectionString = "mongodb+srv://rbbsolucoes_db_user:06heswrx8VXpP4Yj@rbbsolucoes.7eqlmgi.mongodb.net/?retryWrites=true&w=majority&appName=RbbSolucoes";
+        
         services.AddScoped<MongoDbSession>();
 
         services.AddSingleton<IMongoClient>(sp =>
         {
-            MongoClientSettings mongoSettings = MongoClientSettings.FromConnectionString(_connectionString);
+            MongoClientSettings mongoSettings = MongoClientSettings.FromConnectionString(connectionString);
 
             mongoSettings.ConnectTimeout = TimeSpan.FromSeconds(30);
             mongoSettings.ServerSelectionTimeout = TimeSpan.FromSeconds(30);
