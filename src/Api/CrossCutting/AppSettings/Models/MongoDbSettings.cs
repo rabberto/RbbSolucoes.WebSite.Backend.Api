@@ -1,7 +1,6 @@
-using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using Serilog;
+
 
 namespace RbbSolucoes.Website.Backend.Api.CrossCutting.AppSettings.Models;
 
@@ -13,27 +12,9 @@ public sealed class MongoDbSettings
 
     [JsonPropertyName("databaseName")]
     public string? DatabaseName { get; init; }
-    [JsonPropertyName("user")]
-    public string? User { get; init; }
-
-    [JsonPropertyName("password")]
-    public string? Password { get; init; }
 
     [JsonPropertyName("collections")]
     public MongoDbCollections? Collections { get; init; }
-
-    public string GetFormattedConnectionString()
-    {
-        if (string.IsNullOrWhiteSpace(ConnectionString) ||
-        string.IsNullOrWhiteSpace(User) ||
-        string.IsNullOrWhiteSpace(Password) ||
-        string.IsNullOrWhiteSpace(DatabaseName))
-        {
-            throw new InvalidOperationException("MongoDbSettings properties are not properly set");
-        }
-
-        return string.Format(ConnectionString, User, Password);
-    }
 }
 
 [ExcludeFromCodeCoverage]
