@@ -12,10 +12,10 @@ public static class DependencyResolver
     public static void AddDependencyResolver(this IServiceCollection services)
     {
         AddHttpClientConfiguration(services);
-        // AddApplicationHandlers(services);
-        // AddServices(services);
-        // AddRepositories(services);
-        // AddValidators(services);
+        AddApplicationHandlers(services);
+        AddServices(services);
+        AddRepositories(services);
+        AddValidators(services);
     }
     
     private static void AddHttpClientConfiguration(this IServiceCollection services)
