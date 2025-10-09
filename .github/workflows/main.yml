@@ -67,7 +67,29 @@ jobs:
           az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.runningStatus"
           echo "=== Environment variables configured ==="
           az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.template.containers[0].env[].name" -o table
-          
+          echo "=== Container App Logs ==="
+          az containerapp logs show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --tail 20
+
+      - name: Update Container App Environment Variables
+        run: |
+          echo "=== Updating environment variables explicitly ==="
+          az containerapp update \
+            --name 'website-rbbsolucoes' \
+            --resource-group 'rbb-website-rg' \
+            --set-env-vars \
+              ASPNETCORE_ENVIRONMENT=Production \
+              mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING }}" \
+              mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
+              basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
+              basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
+
+      - name: Verify Environment Variables After Update
+        run: |
+          echo "=== Environment variables after update ==="
+          az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.template.containers[0].env[].name" -o table
+          echo "=== Restart container to apply changes ==="
+          az containerapp revision restart --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg'
+
       - name: Azure Container Apps Build and Deploy
         uses: azure/container-apps-deploy-action@v1
         with:
@@ -83,9 +105,24 @@ jobs:
           minReplicas: '1'
           targetPort: '8080'
           ingress: 'external'
-          environmentVariables: |
-            ASPNETCORE_ENVIRONMENT=Production
-            mongoDbSettings__connectionString=${{ secrets.MONGODB_CONNECTION_STRING }}
-            mongoDbSettings__databaseName=${{ secrets.MONGODB_DATABASE_NAME }}
-            basicAuth__username=${{ secrets.BASIC_AUTH_USERNAME }}
-            basicAuth__password=${{ secrets.BASIC_AUTH_PASSWORD }}
+
+      - name: Set Environment Variables After Deploy
+        run: |
+          echo "=== Setting environment variables after deployment ==="
+          az containerapp update \
+            --name 'website-rbbsolucoes' \
+            --resource-group 'rbb-website-rg' \
+            --set-env-vars \
+              ASPNETCORE_ENVIRONMENT=Production \
+              mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING }}" \
+              mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
+              basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
+              basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
+
+      - name: Final Verification
+        run: |
+          echo "=== Final verification ==="
+          az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.template.containers[0].env[].name" -o table
+          echo "=== Testing endpoint ==="
+          sleep 30
+          curl -s https://website-rbbsolucoes.blackrock-6c506959.brazilsouth.azurecontainerapps.io/api/debug/config-status || true
