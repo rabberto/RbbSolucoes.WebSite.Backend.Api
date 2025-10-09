@@ -54,12 +54,12 @@ jobs:
       - name: Debug Secrets and Environment
         run: |
           echo "=== Debugging Secrets ==="
-          echo "MONGODB_CONNECTION_STRING exists: ${{ secrets.MONGODB_CONNECTION_STRING != '' }}"
-          echo "MONGODB_DATABASE_NAME exists: ${{ secrets.MONGODB_DATABASE_NAME != '' }}"
-          echo "MONGODB_USER exists: ${{ secrets.MONGODB_USER != '' }}"
-          echo "MONGODB_PASSWORD exists: ${{ secrets.MONGODB_PASSWORD != '' }}"
-          echo "BASIC_AUTH_USERNAME exists: ${{ secrets.BASIC_AUTH_USERNAME != '' }}"
-          echo "BASIC_AUTH_PASSWORD exists: ${{ secrets.BASIC_AUTH_PASSWORD != '' }}"
+          echo "MONGODB_CONNECTION_STRING exists: ${{ secrets.MONGODB_CONNECTION_STRING != '' }} | secrets.MONGODB_CONNECTION_STRING"
+          echo "MONGODB_DATABASE_NAME exists: ${{ secrets.MONGODB_DATABASE_NAME != '' }} | secrets.MONGODB_DATABASE_NAME"
+          echo "MONGODB_USER exists: ${{ secrets.MONGODB_USER != '' }} | secrets.MONGODB_USER"
+          echo "MONGODB_PASSWORD exists: ${{ secrets.MONGODB_PASSWORD != '' }} | secrets.MONGODB_PASSWORD"
+          echo "BASIC_AUTH_USERNAME exists: ${{ secrets.BASIC_AUTH_USERNAME != '' }} | secrets.BASIC_AUTH_USERNAME"
+          echo "BASIC_AUTH_PASSWORD exists: ${{ secrets.BASIC_AUTH_PASSWORD != '' }} | secrets.BASIC_AUTH_PASSWORD"
           echo "=========================="
 
       - name: Azure Container Apps Build and Deploy
