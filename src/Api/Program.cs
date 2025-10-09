@@ -6,6 +6,9 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
     
 var builder = WebApplication.CreateBuilder(args);
+builder.AddAppSettingsConfiguration();
+
+builder.Host.UseSerilog();
 
 var services = builder.Services;
 services.AddApiConfiguration();
@@ -13,9 +16,6 @@ services.AddBasicAuthentication();
 //services.AddLoggingConfiguration();
 services.AddDependencyResolver();
 services.AddDatabaseConfiguration();
-builder.AddAppSettingsConfiguration();
-
-builder.Host.UseSerilog();
 
 var app = builder.Build();
 
