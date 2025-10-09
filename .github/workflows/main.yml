@@ -1,12 +1,14 @@
 name: CI-CD
 
 on:
-  push:
-    branches: ["main"]
+  pull_request:
+    branches: ["develop"]
+    types: [closed]
   workflow_dispatch:    
 
 jobs:
   CI:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       image-tag: ${{ steps.date.outputs.date }}.${{ github.run_number }}
@@ -33,10 +35,11 @@ jobs:
           tags: |
             rabberto/website-rbbsolucoes:${{ steps.date.outputs.date }}.${{ github.run_number }}
             rabberto/website-rbbsolucoes:latest
-      
-  CD:
+
+  CD-Homologacao:
     needs: CI
     runs-on: ubuntu-latest
+    environment: homologacao
     steps:
       - name: Checkout
         uses: actions/checkout@v5.0.0
@@ -52,11 +55,11 @@ jobs:
             az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
           fi
 
-      - name: Azure Container Apps Build and Deploy
+      - name: Deploy to Homologacao
         uses: azure/container-apps-deploy-action@v1
         with:
           imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.CI.outputs.image-tag }}
-          containerAppName: 'website-rbbsolucoes'
+          containerAppName: 'website-rbbsolucoes-hml'
           resourceGroup: 'rbb-website-rg'
           containerAppEnvironment: 'rbb-website-hml'
           replaceExistingImage: true
@@ -68,7 +71,54 @@ jobs:
           targetPort: '8080'
           ingress: 'external'
 
-      - name: Set Environment Variables
+      - name: Set Environment Variables - Homologacao
+        run: |
+          az containerapp update \
+            --name 'website-rbbsolucoes-hml' \
+            --resource-group 'rbb-website-rg' \
+            --set-env-vars \
+              ASPNETCORE_ENVIRONMENT=Staging \
+              mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING_HML }}" \
+              mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME_HML }}" \
+              basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
+              basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
+
+  CD-Producao:
+    needs: [CI, CD-Homologacao]
+    runs-on: ubuntu-latest
+    environment: producao
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.0
+      
+      - name: Azure Login
+        uses: azure/login@v1.4.6
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Container App Environment (if not exists)
+        run: |
+          if ! az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
+            az containerapp env create --name "rbb-website-prod" --resource-group "rbb-website-rg" --location "Brazil South"
+          fi
+
+      - name: Deploy to Producao
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.CI.outputs.image-tag }}
+          containerAppName: 'website-rbbsolucoes'
+          resourceGroup: 'rbb-website-rg'
+          containerAppEnvironment: 'rbb-website-prod'
+          replaceExistingImage: true
+          waitForDeployment: true
+          timeout: '600'
+          cpu: '0.5'
+          memory: '1Gi'
+          minReplicas: '2'
+          targetPort: '8080'
+          ingress: 'external'
+
+      - name: Set Environment Variables - Producao
         run: |
           az containerapp update \
             --name 'website-rbbsolucoes' \
@@ -79,14 +129,3 @@ jobs:
               mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
               basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
               basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
-
-      # - name: Final Verification
-      #   run: |
-      #     echo "=== Final verification ==="
-      #     echo "=== Checking deployment status ==="
-      #     az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.runningStatus"
-      #     echo "=== Container App Logs ==="
-      #     az containerapp logs show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --tail 20
-      #     echo "=== Testing endpoint ==="
-      #     sleep 30
-      #     curl -s https://website-rbbsolucoes.blackrock-6c506959.brazilsouth.azurecontainerapps.io/api/debug/config-status || true
