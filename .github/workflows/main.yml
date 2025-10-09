@@ -48,8 +48,9 @@ jobs:
 
       - name: Create Container App Environment (if not exists)
         run: |
-          az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" || \ 
-          az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
+          if ! az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
+            az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
+          fi
 
       - name: Debug Secrets and Environment
         run: |
@@ -68,7 +69,7 @@ jobs:
           imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.CI.outputs.image-tag }}
           containerAppName: 'website-rbbsolucoes'
           resourceGroup: 'rbb-website-rg'
-          containerAppEnvironment: 'rbb-website-homolog'
+          containerAppEnvironment: 'rbb-website-hml'
           replaceExistingImage: true
           waitForDeployment: true
           timeout: '600'
