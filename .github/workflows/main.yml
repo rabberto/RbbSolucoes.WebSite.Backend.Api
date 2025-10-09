@@ -70,10 +70,9 @@ jobs:
           ingress: 'external'
           environmentVariables: |
             ASPNETCORE_ENVIRONMENT=Production
+            mongoDbSettings__connectionString=${{ secrets.MONGODB_CONNECTION_STRING }}
             mongoDbSettings__databaseName=${{ secrets.MONGODB_DATABASE_NAME }}
             mongoDbSettings__user=${{ secrets.MONGODB_USER }}
             mongoDbSettings__password=${{ secrets.MONGODB_PASSWORD }}
             basicAuth__username=${{ secrets.BASIC_AUTH_USERNAME }}
             basicAuth__password=${{ secrets.BASIC_AUTH_PASSWORD }}
-
-
