@@ -14,7 +14,7 @@ namespace RbbSolucoes.Website.Backend.Api.Configurations;
 [ExcludeFromCodeCoverage]
 public static class DatabaseConfiguration
 {
-    private readonly static string _connectionString = AppSettings.Settings?.MongoDbSettings?.ConnectionString
+    private readonly static string _connectionString = AppSettings.Settings?.MongoDbSettings?.GetFormattedConnectionString()
         ?? throw new InvalidOperationException("MongoDbSettings.ConnectionString is not initialized.");
 
     public static IServiceCollection AddDatabaseConfiguration(this IServiceCollection services)
