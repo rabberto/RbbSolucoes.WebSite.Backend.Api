@@ -61,6 +61,13 @@ jobs:
           echo "BASIC_AUTH_PASSWORD exists: ${{ secrets.BASIC_AUTH_PASSWORD != '' }}"
           echo "=========================="
 
+      - name: Verify Deployment
+        run: |
+          echo "=== Checking deployment status ==="
+          az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.runningStatus"
+          echo "=== Environment variables configured ==="
+          az containerapp show --name 'website-rbbsolucoes' --resource-group 'rbb-website-rg' --query "properties.template.containers[0].env[].name" -o table
+          
       - name: Azure Container Apps Build and Deploy
         uses: azure/container-apps-deploy-action@v1
         with:
