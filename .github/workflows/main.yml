@@ -50,7 +50,7 @@ jobs:
 
       - name: Create Container App Environment (if not exists)
         run: |
-          az containerapp env show --name "rbb-website-homolog" --resource-group "rbb-website-rg" || \
+          az containerapp env show --name "rbb-website-homolog" --resource-group "rbb-website-rg" || \ 
           az containerapp env create --name "rbb-website-homolog" --resource-group "rbb-website-rg" --location "East US"
         
       - name: Azure Container Apps Build and Deploy
