@@ -19,7 +19,8 @@ public static class DatabaseConfiguration
 
     public static IServiceCollection AddDatabaseConfiguration(this IServiceCollection services)
     {
-        string connectionString = "mongodb+srv://rbbsolucoes_db_user:06heswrx8VXpP4Yj@rbbsolucoes.7eqlmgi.mongodb.net/?retryWrites=true&w=majority&appName=RbbSolucoes";
+        string connectionString = AppSettings.Settings?.MongoDbSettings?.ConnectionString 
+            ?? throw new InvalidOperationException("MongoDbSettings.ConnectionString is not initialized.");
         
         services.AddScoped<MongoDbSession>();
 
