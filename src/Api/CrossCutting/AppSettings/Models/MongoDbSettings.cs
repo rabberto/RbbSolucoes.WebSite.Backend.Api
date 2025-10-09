@@ -24,12 +24,6 @@ public sealed class MongoDbSettings
 
     public string GetFormattedConnectionString()
     {
-        Log.Information("Checking MongoDB settings...");
-        Log.Information("ConnectionString exists: {ConnectionString}", ConnectionString);
-        Log.Information("User: {User}", User);
-        Log.Information("DatabaseName: {DatabaseName}", DatabaseName);
-        Log.Information("Password exists: Password", Password);
-
         if (string.IsNullOrWhiteSpace(ConnectionString) ||
         string.IsNullOrWhiteSpace(User) ||
         string.IsNullOrWhiteSpace(Password) ||
@@ -38,7 +32,7 @@ public sealed class MongoDbSettings
             throw new InvalidOperationException("MongoDbSettings properties are not properly set");
         }
 
-        return string.Format(ConnectionString, User, Password, DatabaseName);
+        return string.Format(ConnectionString, User, Password);
     }
 }
 
