@@ -187,8 +187,24 @@ jobs:
             echo "=== Updated access list after adding IP ==="
             atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list updated access list"
             
-            echo "=== Testing connectivity from Container App ==="
-            echo "IP $HML_IP should now have access to MongoDB Atlas"
+            echo "=== Removing 0.0.0.0/0 temporarily to test specific IP ==="
+            atlas accessLists delete 0.0.0.0/0 --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" --force || echo "0.0.0.0/0 not found or already removed"
+            
+            echo "=== Waiting for changes to propagate ==="
+            sleep 15
+            
+            echo "=== Access list after removing 0.0.0.0/0 ==="
+            atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list access list"
+            
+            echo "=== Testing connectivity with specific IP only ==="
+            echo "Testing if Container App can connect with IP $HML_IP only (no 0.0.0.0/0)"
+            echo "If this test fails, we'll know the specific IP doesn't work"
+            
+            echo "=== Re-adding 0.0.0.0/0 after test ==="
+            atlas accessLists create 0.0.0.0/0 --type ipAddress --comment "Temporary - for testing access" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to re-add 0.0.0.0/0"
+            
+            echo "=== Final access list ==="
+            atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list final access list"
           else
             echo "ERROR: No valid IP address obtained. Cannot configure MongoDB Atlas access."
             echo "This means the Container App may not have network connectivity to MongoDB."
@@ -327,8 +343,24 @@ jobs:
             echo "=== Updated access list after adding IP ==="
             atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list updated access list"
             
-            echo "=== Testing connectivity from Container App ==="
-            echo "IP $PROD_IP should now have access to MongoDB Atlas"
+            echo "=== Removing 0.0.0.0/0 temporarily to test specific IP ==="
+            atlas accessLists delete 0.0.0.0/0 --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" --force || echo "0.0.0.0/0 not found or already removed"
+            
+            echo "=== Waiting for changes to propagate ==="
+            sleep 15
+            
+            echo "=== Access list after removing 0.0.0.0/0 ==="
+            atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list access list"
+            
+            echo "=== Testing connectivity with specific IP only ==="
+            echo "Testing if Container App can connect with IP $PROD_IP only (no 0.0.0.0/0)"
+            echo "If this test fails, we'll know the specific IP doesn't work"
+            
+            echo "=== Re-adding 0.0.0.0/0 after test ==="
+            atlas accessLists create 0.0.0.0/0 --type ipAddress --comment "Temporary - for testing access" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to re-add 0.0.0.0/0"
+            
+            echo "=== Final access list ==="
+            atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list final access list"
           else
             echo "ERROR: No valid IP address obtained. Cannot configure MongoDB Atlas access."
             echo "This means the Container App may not have network connectivity to MongoDB."
