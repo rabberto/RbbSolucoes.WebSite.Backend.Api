@@ -21,7 +21,7 @@ jobs:
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
       - name: Check MongoDB Atlas Current Access List
-        if: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY != '' && secrets.MONGODB_ATLAS_PRIVATE_KEY != '' && secrets.MONGODB_ATLAS_PROJECT_ID != '' }}
+        if: ${{ vars.ENABLE_MONGODB_ATLAS == 'true' }}
         run: |
           echo "=== Installing MongoDB Atlas CLI ==="
           curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
@@ -107,7 +107,7 @@ jobs:
           echo "hml_ip=$OUTBOUND_IPS" >> $GITHUB_OUTPUT
 
       - name: Configure MongoDB Atlas Network Access - Homologacao
-        if: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY != '' && secrets.MONGODB_ATLAS_PRIVATE_KEY != '' && secrets.MONGODB_ATLAS_PROJECT_ID != '' }}
+        if: ${{ vars.ENABLE_MONGODB_ATLAS == 'true' }}
         run: |
           echo "=== Configuring MongoDB Atlas Network Access for Homologacao ==="
           # Instalar MongoDB CLI se necessário
@@ -180,7 +180,7 @@ jobs:
           echo "prod_ip=$OUTBOUND_IPS" >> $GITHUB_OUTPUT
 
       - name: Configure MongoDB Atlas Network Access - Producao
-        if: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY != '' && secrets.MONGODB_ATLAS_PRIVATE_KEY != '' && secrets.MONGODB_ATLAS_PROJECT_ID != '' }}
+        if: ${{ vars.ENABLE_MONGODB_ATLAS == 'true' }}
         run: |
           echo "=== Configuring MongoDB Atlas Network Access for Producao ==="
           # Instalar MongoDB CLI se necessário
