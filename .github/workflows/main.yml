@@ -70,7 +70,12 @@ jobs:
       - name: Create Container App Environment (if not exists)
         run: |
           if ! az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
+            echo "Creating Container App Environment..."
             az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
+            echo "Waiting for environment to be provisioned..."
+            sleep 60
+          else
+            echo "Container App Environment already exists"
           fi
 
       - name: Deploy to Homologacao
@@ -80,20 +85,19 @@ jobs:
           containerAppName: 'website-rbbsolucoes-hml'
           resourceGroup: 'rbb-website-rg'
           containerAppEnvironment: 'rbb-website-hml'
-          replaceExistingImage: true
-          waitForDeployment: true
-          timeout: '600'
-          cpu: '0.25'
-          memory: '512Mi'
-          minReplicas: '1'
           targetPort: '8080'
           ingress: 'external'
 
       - name: Set Environment Variables - Homologacao
         run: |
+          echo "=== Updating Container App with environment variables and resources ==="
           az containerapp update \
             --name 'website-rbbsolucoes-hml' \
             --resource-group 'rbb-website-rg' \
+            --cpu 0.25 \
+            --memory 0.5Gi \
+            --min-replicas 1 \
+            --max-replicas 3 \
             --set-env-vars \
               ASPNETCORE_ENVIRONMENT=Staging \
               mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING_HML }}" \
@@ -146,7 +150,12 @@ jobs:
       - name: Create Container App Environment (if not exists)
         run: |
           if ! az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
+            echo "Creating Container App Environment..."
             az containerapp env create --name "rbb-website-prod" --resource-group "rbb-website-rg" --location "Brazil South"
+            echo "Waiting for environment to be provisioned..."
+            sleep 60
+          else
+            echo "Container App Environment already exists"
           fi
 
       - name: Deploy to Producao
@@ -156,20 +165,19 @@ jobs:
           containerAppName: 'website-rbbsolucoes'
           resourceGroup: 'rbb-website-rg'
           containerAppEnvironment: 'rbb-website-prod'
-          replaceExistingImage: true
-          waitForDeployment: true
-          timeout: '600'
-          cpu: '0.5'
-          memory: '1Gi'
-          minReplicas: '2'
           targetPort: '8080'
           ingress: 'external'
 
       - name: Set Environment Variables - Producao
         run: |
+          echo "=== Updating Container App with environment variables and resources ==="
           az containerapp update \
             --name 'website-rbbsolucoes' \
             --resource-group 'rbb-website-rg' \
+            --cpu 0.5 \
+            --memory 1.0Gi \
+            --min-replicas 2 \
+            --max-replicas 5 \
             --set-env-vars \
               ASPNETCORE_ENVIRONMENT=Production \
               mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING }}" \
