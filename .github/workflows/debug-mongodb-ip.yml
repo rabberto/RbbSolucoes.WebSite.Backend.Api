@@ -1,7 +1,9 @@
 name: Debug MongoDB IP
 
 on:
-  workflow_dispatch:    
+  workflow_dispatch:
+  push:
+    branches: ["release/teste-ci-cd"]    
 
 jobs:
   Debug-MongoDB-Access:
