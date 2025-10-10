@@ -146,3 +146,100 @@ jobs:
               mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
               basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
               basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
+
+  Create-Main-PR:
+    needs: [Build, Homologacao, Producao]
+    runs-on: ubuntu-latest
+    environment: main-pr-approval
+    if: github.ref == 'refs/heads/develop' || contains(github.ref, 'release/')
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v5.0.0
+        with:
+          ref: develop
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check if PR already exists
+        id: check-pr
+        run: |
+          # Check if there's already an open PR from develop to main
+          PR_EXISTS=$(gh pr list --base main --head develop --state open --json number --jq length)
+          echo "pr_exists=$PR_EXISTS" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request to Main
+        if: steps.check-pr.outputs.pr_exists == '0'
+        run: |
+          # Get the latest commit info for PR description
+          LAST_COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+          IMAGE_TAG="${{ needs.Build.outputs.image-tag }}"
+          
+          # Create PR body with deployment information
+          PR_BODY=$(cat << EOF
+          ## 🚀 Production Deployment Completed
+          
+          This PR contains changes that have been successfully deployed to production.
+          
+          ### 📦 Deployment Details
+          - **Docker Image**: \`rabberto/website-rbbsolucoes:${IMAGE_TAG}\`
+          - **Homologação**: ✅ Deployed successfully
+          - **Produção**: ✅ Deployed successfully
+          - **MongoDB Atlas**: ✅ Configured
+          
+          ### 📋 Changes
+          - ${LAST_COMMIT_MSG}
+          
+          ### 🔗 Environments
+          - **Homologação**: https://website-rbbsolucoes-hml.thankfulocean-849de4dd.brazilsouth.azurecontainerapps.io
+          - **Produção**: https://website-rbbsolucoes.thankfulocean-849de4dd.brazilsouth.azurecontainerapps.io
+          
+          ### ✅ Ready for Main
+          All tests passed and production deployment successful. Ready to merge to main branch.
+          EOF
+          )
+          
+          # Create the pull request
+          gh pr create \
+            --title "🚀 Production Release ${IMAGE_TAG} - Deploy to Main" \
+            --body "$PR_BODY" \
+            --base main \
+            --head develop \
+            --label "production-release" \
+            --label "auto-generated"
+            
+          echo "✅ Pull request created successfully!"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: PR Already Exists
+        if: steps.check-pr.outputs.pr_exists != '0'
+        run: |
+          echo "ℹ️ Pull request from develop to main already exists."
+          echo "Updating existing PR with latest deployment information..."
+          
+          # Get PR number
+          PR_NUMBER=$(gh pr list --base main --head develop --state open --json number --jq '.[0].number')
+          
+          # Add comment to existing PR
+          IMAGE_TAG="${{ needs.Build.outputs.image-tag }}"
+          COMMENT_BODY=$(cat << EOF
+          ## 🔄 New Production Deployment
+          
+          **Docker Image**: \`rabberto/website-rbbsolucoes:${IMAGE_TAG}\`
+          **Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+          
+          ✅ Production deployment completed successfully!
+          EOF
+          )
+          
+          gh pr comment $PR_NUMBER --body "$COMMENT_BODY"
+          echo "✅ Existing PR updated with deployment information!"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
