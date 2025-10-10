@@ -30,7 +30,10 @@ jobs:
           sudo apt-get install -y mongodb-atlas-cli
           
           echo "=== Configuring Atlas CLI ==="
-          atlas auth login --publicKey "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" --privateKey "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          atlas config set public_api_key "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}"
+          atlas config set private_api_key "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
+          atlas config set silence_storage_warning true
           
           echo "=== Current MongoDB Atlas Access List ==="
           atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to get access list"
@@ -117,7 +120,10 @@ jobs:
           sudo apt-get install -y mongodb-atlas-cli
           
           # Configurar Atlas CLI
-          echo "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" | atlas auth login --publicKey "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" --privateKey "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          atlas config set public_api_key "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}"
+          atlas config set private_api_key "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
+          atlas config set silence_storage_warning true
           
           # Adicionar IP ao Atlas
           HML_IP="${{ steps.get-ips-hml.outputs.hml_ip }}"
@@ -190,7 +196,10 @@ jobs:
           sudo apt-get install -y mongodb-atlas-cli
           
           # Configurar Atlas CLI
-          echo "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" | atlas auth login --publicKey "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" --privateKey "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          atlas config set public_api_key "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}"
+          atlas config set private_api_key "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
+          atlas config set silence_storage_warning true
           
           # Adicionar IP ao Atlas
           PROD_IP="${{ steps.get-ips-prod.outputs.prod_ip }}"
