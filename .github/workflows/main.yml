@@ -7,7 +7,7 @@ on:
   workflow_dispatch:    
 
 jobs:
-  CI:
+  Build:
     if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
@@ -19,6 +19,20 @@ jobs:
       - name: Get current date
         id: date
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      - name: Check MongoDB Atlas Current Access List
+        run: |
+          echo "=== Installing MongoDB Atlas CLI ==="
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+          echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-atlas-cli
+          
+          echo "=== Configuring Atlas CLI ==="
+          atlas auth login --publicKey "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" --privateKey "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          
+          echo "=== Current MongoDB Atlas Access List ==="
+          atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to get access list"
 
       - name: Docker Login
         uses: docker/login-action@v3.6.0
@@ -36,8 +50,8 @@ jobs:
             rabberto/website-rbbsolucoes:${{ steps.date.outputs.date }}.${{ github.run_number }}
             rabberto/website-rbbsolucoes:latest
 
-  CD-Homologacao:
-    needs: CI
+  Homologacao:
+    needs: Build
     runs-on: ubuntu-latest
     environment: homologacao
     steps:
@@ -83,8 +97,33 @@ jobs:
               basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
               basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
 
-  CD-Producao:
-    needs: [CI, CD-Homologacao]
+      - name: Get Container App Outbound IPs - Homologacao
+        id: get-ips-hml
+        run: |
+          echo "=== Getting Container App Environment Outbound IPs ==="
+          OUTBOUND_IPS=$(az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" --query "properties.staticIp" -o tsv)
+          echo "Homologacao Outbound IP: $OUTBOUND_IPS"
+          echo "hml_ip=$OUTBOUND_IPS" >> $GITHUB_OUTPUT
+
+      - name: Configure MongoDB Atlas Network Access - Homologacao
+        run: |
+          echo "=== Configuring MongoDB Atlas Network Access for Homologacao ==="
+          # Instalar MongoDB CLI se necessário
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+          echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-atlas-cli
+          
+          # Configurar Atlas CLI
+          echo "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" | atlas auth login --publicKey "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" --privateKey "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          
+          # Adicionar IP ao Atlas
+          HML_IP="${{ steps.get-ips-hml.outputs.hml_ip }}"
+          echo "Adding IP $HML_IP to MongoDB Atlas..."
+          atlas accessLists create $HML_IP --type ipAddress --comment "Container App Homologacao - Auto added by CI/CD" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists or error occurred"
+
+  Producao:
+    needs: [Build, Homologacao]
     runs-on: ubuntu-latest
     environment: producao
     steps:
@@ -129,3 +168,28 @@ jobs:
               mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
               basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
               basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
+
+      - name: Get Container App Outbound IPs - Producao
+        id: get-ips-prod
+        run: |
+          echo "=== Getting Container App Environment Outbound IPs ==="
+          OUTBOUND_IPS=$(az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" --query "properties.staticIp" -o tsv)
+          echo "Producao Outbound IP: $OUTBOUND_IPS"
+          echo "prod_ip=$OUTBOUND_IPS" >> $GITHUB_OUTPUT
+
+      - name: Configure MongoDB Atlas Network Access - Producao
+        run: |
+          echo "=== Configuring MongoDB Atlas Network Access for Producao ==="
+          # Instalar MongoDB CLI se necessário
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+          echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-atlas-cli
+          
+          # Configurar Atlas CLI
+          echo "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" | atlas auth login --publicKey "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}" --privateKey "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          
+          # Adicionar IP ao Atlas
+          PROD_IP="${{ steps.get-ips-prod.outputs.prod_ip }}"
+          echo "Adding IP $PROD_IP to MongoDB Atlas..."
+          atlas accessLists create $PROD_IP --type ipAddress --comment "Container App Producao - Auto added by CI/CD" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists or error occurred"
