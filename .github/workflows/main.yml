@@ -21,6 +21,7 @@ jobs:
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
       - name: Check MongoDB Atlas Current Access List
+        if: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY != '' && secrets.MONGODB_ATLAS_PRIVATE_KEY != '' && secrets.MONGODB_ATLAS_PROJECT_ID != '' }}
         run: |
           echo "=== Installing MongoDB Atlas CLI ==="
           curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
@@ -72,7 +73,7 @@ jobs:
       - name: Deploy to Homologacao
         uses: azure/container-apps-deploy-action@v1
         with:
-          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.CI.outputs.image-tag }}
+          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.Build.outputs.image-tag }}
           containerAppName: 'website-rbbsolucoes-hml'
           resourceGroup: 'rbb-website-rg'
           containerAppEnvironment: 'rbb-website-hml'
@@ -106,6 +107,7 @@ jobs:
           echo "hml_ip=$OUTBOUND_IPS" >> $GITHUB_OUTPUT
 
       - name: Configure MongoDB Atlas Network Access - Homologacao
+        if: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY != '' && secrets.MONGODB_ATLAS_PRIVATE_KEY != '' && secrets.MONGODB_ATLAS_PROJECT_ID != '' }}
         run: |
           echo "=== Configuring MongoDB Atlas Network Access for Homologacao ==="
           # Instalar MongoDB CLI se necessário
@@ -144,7 +146,7 @@ jobs:
       - name: Deploy to Producao
         uses: azure/container-apps-deploy-action@v1
         with:
-          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.CI.outputs.image-tag }}
+          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.Build.outputs.image-tag }}
           containerAppName: 'website-rbbsolucoes'
           resourceGroup: 'rbb-website-rg'
           containerAppEnvironment: 'rbb-website-prod'
@@ -178,6 +180,7 @@ jobs:
           echo "prod_ip=$OUTBOUND_IPS" >> $GITHUB_OUTPUT
 
       - name: Configure MongoDB Atlas Network Access - Producao
+        if: ${{ secrets.MONGODB_ATLAS_PUBLIC_KEY != '' && secrets.MONGODB_ATLAS_PRIVATE_KEY != '' && secrets.MONGODB_ATLAS_PROJECT_ID != '' }}
         run: |
           echo "=== Configuring MongoDB Atlas Network Access for Producao ==="
           # Instalar MongoDB CLI se necessário
