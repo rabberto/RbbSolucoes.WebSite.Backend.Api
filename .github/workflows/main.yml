@@ -6,6 +6,12 @@ on:
     types: [closed]
   workflow_dispatch:    
 
+# Adicionar permissões para criar PRs
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write    
+
 jobs:
   Build:
     if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
@@ -163,7 +169,7 @@ jobs:
         with:
           ref: develop
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
         run: |
@@ -177,7 +183,7 @@ jobs:
           PR_EXISTS=$(gh pr list --base main --head develop --state open --json number --jq length)
           echo "pr_exists=$PR_EXISTS" >> $GITHUB_OUTPUT
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Create Pull Request to Main
         if: steps.check-pr.outputs.pr_exists == '0'
@@ -214,7 +220,7 @@ jobs:
             
           echo "✅ Pull request created successfully!"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: PR Already Exists
         if: steps.check-pr.outputs.pr_exists != '0'
@@ -240,4 +246,4 @@ jobs:
           gh pr comment $PR_NUMBER --body "$COMMENT_BODY"
           echo "✅ Existing PR updated with build information!"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN || secrets.GITHUB_TOKEN }}
