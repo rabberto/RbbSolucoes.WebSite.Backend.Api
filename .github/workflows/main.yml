@@ -170,34 +170,43 @@ jobs:
           atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
           atlas config set silence_storage_warning true
           
-          # Verificar IP obtido
+          # Verificar IP obtido para referência
           HML_IP="${{ steps.get-ips-hml.outputs.hml_ip }}"
-          echo "IP to be added: $HML_IP"
+          echo "Container App Static IP (reference): $HML_IP"
           
           if [ "$HML_IP" != "NotAvailable" ] && [ "$HML_IP" != "null" ] && [ "$HML_IP" != "" ]; then
-            echo "=== Current access list before adding IP ==="
+            echo "=== Current access list before configuration ==="
             atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list current access list"
             
-            echo "=== Adding IP $HML_IP to MongoDB Atlas ==="
-            atlas accessLists create $HML_IP --type ipAddress --comment "Container App Homologacao - Auto added by CI/CD $(date)" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists or error occurred"
+            echo "=== Adding Azure Brazil South Container Apps IP ranges ==="
+            # Container Apps uses dynamic IP pools from Azure datacenter ranges
+            # Adding the main Brazil South datacenter ranges for Container Apps
             
-            echo "=== Waiting for IP to be active ==="
+            # Brazil South primary ranges for Container Apps
+            atlas accessLists create "191.232.0.0/16" --type ipAddress --comment "Azure Brazil South - Container Apps Range 1" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Range already exists"
+            atlas accessLists create "191.234.0.0/16" --type ipAddress --comment "Azure Brazil South - Container Apps Range 2" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Range already exists"
+            atlas accessLists create "191.238.0.0/18" --type ipAddress --comment "Azure Brazil South - Container Apps Range 3" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Range already exists"
+            
+            # Specific IP for reference (might not be the actual outbound IP)
+            atlas accessLists create "$HML_IP/32" --type ipAddress --comment "Container App Homologacao Static IP - $(date)" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists"
+            
+            echo "=== Waiting for configuration to propagate ==="
             sleep 10
             
-            echo "=== Updated access list after adding IP ==="
+            echo "=== Updated access list ==="
             atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list updated access list"
             
-            echo "=== Removing unnecessary 0.0.0.0/0 for security ==="
+            echo "=== Removing insecure 0.0.0.0/0 if present ==="
             atlas accessLists delete 0.0.0.0/0 --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" --force || echo "0.0.0.0/0 not found or already removed"
             
             echo "=== Final secure access list ==="
             atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list final access list"
             
-            echo "=== MongoDB Atlas configured successfully ==="
-            echo "IP $HML_IP now has secure access to MongoDB Atlas"
+            echo "=== MongoDB Atlas configured with Azure Container Apps IP ranges ==="
+            echo "Container Apps in Brazil South region should now have access to MongoDB Atlas"
           else
             echo "ERROR: No valid IP address obtained. Cannot configure MongoDB Atlas access."
-            echo "This means the Container App may not have network connectivity to MongoDB."
+            echo "This means the Container App may not have network connectivity."
           fi
 
   Producao:
@@ -316,31 +325,40 @@ jobs:
           atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
           atlas config set silence_storage_warning true
           
-          # Verificar IP obtido
+          # Verificar IP obtido para referência
           PROD_IP="${{ steps.get-ips-prod.outputs.prod_ip }}"
-          echo "IP to be added: $PROD_IP"
+          echo "Container App Static IP (reference): $PROD_IP"
           
           if [ "$PROD_IP" != "NotAvailable" ] && [ "$PROD_IP" != "null" ] && [ "$PROD_IP" != "" ]; then
-            echo "=== Current access list before adding IP ==="
+            echo "=== Current access list before configuration ==="
             atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list current access list"
             
-            echo "=== Adding IP $PROD_IP to MongoDB Atlas ==="
-            atlas accessLists create $PROD_IP --type ipAddress --comment "Container App Producao - Auto added by CI/CD $(date)" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists or error occurred"
+            echo "=== Adding Azure Brazil South Container Apps IP ranges ==="
+            # Container Apps uses dynamic IP pools from Azure datacenter ranges
+            # Adding the main Brazil South datacenter ranges for Container Apps
             
-            echo "=== Waiting for IP to be active ==="
+            # Brazil South primary ranges for Container Apps
+            atlas accessLists create "191.232.0.0/16" --type ipAddress --comment "Azure Brazil South - Container Apps Range 1" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Range already exists"
+            atlas accessLists create "191.234.0.0/16" --type ipAddress --comment "Azure Brazil South - Container Apps Range 2" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Range already exists"
+            atlas accessLists create "191.238.0.0/18" --type ipAddress --comment "Azure Brazil South - Container Apps Range 3" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Range already exists"
+            
+            # Specific IP for reference (might not be the actual outbound IP)
+            atlas accessLists create "$PROD_IP/32" --type ipAddress --comment "Container App Producao Static IP - $(date)" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists"
+            
+            echo "=== Waiting for configuration to propagate ==="
             sleep 10
             
-            echo "=== Updated access list after adding IP ==="
+            echo "=== Updated access list ==="
             atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list updated access list"
             
-            echo "=== Removing unnecessary 0.0.0.0/0 for security ==="
+            echo "=== Removing insecure 0.0.0.0/0 if present ==="
             atlas accessLists delete 0.0.0.0/0 --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" --force || echo "0.0.0.0/0 not found or already removed"
             
             echo "=== Final secure access list ==="
             atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list final access list"
             
-            echo "=== MongoDB Atlas configured successfully ==="
-            echo "IP $PROD_IP now has secure access to MongoDB Atlas"
+            echo "=== MongoDB Atlas configured with Azure Container Apps IP ranges ==="
+            echo "Container Apps in Brazil South region should now have access to MongoDB Atlas"
           else
             echo "ERROR: No valid IP address obtained. Cannot configure MongoDB Atlas access."
             echo "This means the Container App may not have network connectivity to MongoDB."
