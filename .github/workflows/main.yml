@@ -69,13 +69,37 @@ jobs:
 
       - name: Create Container App Environment (if not exists)
         run: |
+          echo "=== Checking if Container App Environment exists ==="
           if ! az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
             echo "Creating Container App Environment..."
             az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
             echo "Waiting for environment to be provisioned..."
-            sleep 60
+            
+            # Wait and check provisioning status
+            for i in {1..12}; do
+              echo "Checking provisioning status (attempt $i/12)..."
+              STATUS=$(az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+              echo "Current status: $STATUS"
+              
+              if [ "$STATUS" = "Succeeded" ]; then
+                echo "Environment successfully provisioned!"
+                break
+              elif [ "$STATUS" = "Failed" ]; then
+                echo "Environment provisioning failed!"
+                exit 1
+              fi
+              
+              if [ $i -eq 12 ]; then
+                echo "Timeout waiting for environment provisioning"
+                exit 1
+              fi
+              
+              sleep 30
+            done
           else
             echo "Container App Environment already exists"
+            STATUS=$(az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" --query "properties.provisioningState" -o tsv)
+            echo "Environment status: $STATUS"
           fi
 
       - name: Deploy to Homologacao
@@ -149,13 +173,37 @@ jobs:
 
       - name: Create Container App Environment (if not exists)
         run: |
+          echo "=== Checking if Container App Environment exists ==="
           if ! az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
             echo "Creating Container App Environment..."
             az containerapp env create --name "rbb-website-prod" --resource-group "rbb-website-rg" --location "Brazil South"
             echo "Waiting for environment to be provisioned..."
-            sleep 60
+            
+            # Wait and check provisioning status
+            for i in {1..12}; do
+              echo "Checking provisioning status (attempt $i/12)..."
+              STATUS=$(az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" --query "properties.provisioningState" -o tsv 2>/dev/null || echo "NotFound")
+              echo "Current status: $STATUS"
+              
+              if [ "$STATUS" = "Succeeded" ]; then
+                echo "Environment successfully provisioned!"
+                break
+              elif [ "$STATUS" = "Failed" ]; then
+                echo "Environment provisioning failed!"
+                exit 1
+              fi
+              
+              if [ $i -eq 12 ]; then
+                echo "Timeout waiting for environment provisioning"
+                exit 1
+              fi
+              
+              sleep 30
+            done
           else
             echo "Container App Environment already exists"
+            STATUS=$(az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" --query "properties.provisioningState" -o tsv)
+            echo "Environment status: $STATUS"
           fi
 
       - name: Deploy to Producao
