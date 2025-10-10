@@ -181,6 +181,10 @@ jobs:
           LAST_COMMIT_MSG=$(git log -1 --pretty=format:"%s")
           IMAGE_TAG="${{ needs.Build.outputs.image-tag }}"
           
+          # Create labels if they don't exist
+          gh label create "production-release" --description "Automated production release" --color "0E8A16" --force || true
+          gh label create "auto-generated" --description "Automatically generated PR" --color "B60205" --force || true
+          
           # Create PR body with deployment information
           PR_BODY=$(cat << EOF
           ## 🚀 Production Deployment Completed
