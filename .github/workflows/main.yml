@@ -1,0 +1,148 @@
+name: CI-CD
+
+on:
+  pull_request:
+    branches: ["develop"]
+    types: [closed]
+  workflow_dispatch:    
+
+jobs:
+  Build:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.date.outputs.date }}.${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5.0.0
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
+      - name: Ensure MongoDB Atlas Access
+        if: ${{ vars.ENABLE_MONGODB_ATLAS == 'true' }}
+        run: |
+          echo "=== Configuring MongoDB Atlas Network Access ==="
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+          echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-atlas-cli
+          
+          atlas config set public_api_key "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}"
+          atlas config set private_api_key "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
+          atlas config set silence_storage_warning true
+          
+          echo "Ensuring Container Apps have access to MongoDB Atlas..."
+          atlas accessLists create "0.0.0.0/0" --type ipAddress --comment "Container Apps access - cost effective solution" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Access already configured"
+
+      - name: Docker Login
+        uses: docker/login-action@v3.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PWD }}
+
+      - name: Build and push Docker images
+        uses: docker/build-push-action@v6.18.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            rabberto/website-rbbsolucoes:${{ steps.date.outputs.date }}.${{ github.run_number }}
+            rabberto/website-rbbsolucoes:latest
+
+  Homologacao:
+    needs: Build
+    runs-on: ubuntu-latest
+    environment: homologacao
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1.4.6
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Container App Environment (if not exists)
+        run: |
+          if ! az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
+            echo "Creating Container App Environment..."
+            az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
+            
+            # Simple wait for environment
+            echo "Waiting for environment provisioning..."
+            sleep 60
+          fi
+
+      - name: Deploy to Homologacao
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.Build.outputs.image-tag }}
+          containerAppName: 'website-rbbsolucoes-hml'
+          resourceGroup: 'rbb-website-rg'
+          containerAppEnvironment: 'rbb-website-hml'
+          targetPort: '8080'
+          ingress: 'external'
+
+      - name: Configure Environment Variables
+        run: |
+          az containerapp update \
+            --name 'website-rbbsolucoes-hml' \
+            --resource-group 'rbb-website-rg' \
+            --cpu 0.25 \
+            --memory 0.5Gi \
+            --min-replicas 1 \
+            --max-replicas 3 \
+            --set-env-vars \
+              ASPNETCORE_ENVIRONMENT=Staging \
+              mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING_HML }}" \
+              mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME_HML }}" \
+              basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
+              basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
+
+  Producao:
+    needs: [Build, Homologacao]
+    runs-on: ubuntu-latest
+    environment: producao
+    steps:
+      - name: Azure Login
+        uses: azure/login@v1.4.6
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Create Container App Environment (if not exists)
+        run: |
+          if ! az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
+            echo "Creating Container App Environment..."
+            az containerapp env create --name "rbb-website-prod" --resource-group "rbb-website-rg" --location "Brazil South"
+            
+            # Simple wait for environment
+            echo "Waiting for environment provisioning..."
+            sleep 60
+          fi
+
+      - name: Deploy to Producao
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.Build.outputs.image-tag }}
+          containerAppName: 'website-rbbsolucoes'
+          resourceGroup: 'rbb-website-rg'
+          containerAppEnvironment: 'rbb-website-prod'
+          targetPort: '8080'
+          ingress: 'external'
+
+      - name: Configure Environment Variables
+        run: |
+          az containerapp update \
+            --name 'website-rbbsolucoes' \
+            --resource-group 'rbb-website-rg' \
+            --cpu 0.5 \
+            --memory 1.0Gi \
+            --min-replicas 2 \
+            --max-replicas 5 \
+            --set-env-vars \
+              ASPNETCORE_ENVIRONMENT=Production \
+              mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING }}" \
+              mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
+              basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
+              basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
