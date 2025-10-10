@@ -20,137 +20,142 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
-      - name: Ensure MongoDB Atlas Access
-        if: ${{ vars.ENABLE_MONGODB_ATLAS == 'true' }}
-        run: |
-          echo "=== Configuring MongoDB Atlas Network Access ==="
-          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
-          echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-          sudo apt-get update
-          sudo apt-get install -y mongodb-atlas-cli
-          
-          atlas config set public_api_key "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}"
-          atlas config set private_api_key "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
-          atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
-          atlas config set silence_storage_warning true
-          
-          echo "Ensuring Container Apps have access to MongoDB Atlas..."
-          atlas accessLists create "0.0.0.0/0" --type ipAddress --comment "Container Apps access - cost effective solution" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Access already configured"
+      # Comentado para teste do PR
+      # - name: Ensure MongoDB Atlas Access
+      #   if: ${{ vars.ENABLE_MONGODB_ATLAS == 'true' }}
+      #   run: |
+      #     echo "=== Configuring MongoDB Atlas Network Access ==="
+      #     curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+      #     echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+      #     sudo apt-get update
+      #     sudo apt-get install -y mongodb-atlas-cli
+      #     
+      #     atlas config set public_api_key "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}"
+      #     atlas config set private_api_key "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+      #     atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
+      #     atlas config set silence_storage_warning true
+      #     
+      #     echo "Ensuring Container Apps have access to MongoDB Atlas..."
+      #     atlas accessLists create "0.0.0.0/0" --type ipAddress --comment "Container Apps access - cost effective solution" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Access already configured"
 
-      - name: Docker Login
-        uses: docker/login-action@v3.6.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PWD }}
+      # Comentado para teste do PR
+      # - name: Docker Login
+      #   uses: docker/login-action@v3.6.0
+      #   with:
+      #     username: ${{ secrets.DOCKERHUB_USER }}
+      #     password: ${{ secrets.DOCKERHUB_PWD }}
 
-      - name: Build and push Docker images
-        uses: docker/build-push-action@v6.18.0
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            rabberto/website-rbbsolucoes:${{ steps.date.outputs.date }}.${{ github.run_number }}
-            rabberto/website-rbbsolucoes:latest
+      # Comentado para teste do PR
+      # - name: Build and push Docker images
+      #   uses: docker/build-push-action@v6.18.0
+      #   with:
+      #     context: .
+      #     file: ./Dockerfile
+      #     push: true
+      #     tags: |
+      #       rabberto/website-rbbsolucoes:${{ steps.date.outputs.date }}.${{ github.run_number }}
+      #       rabberto/website-rbbsolucoes:latest
 
-  Homologacao:
-    needs: Build
-    runs-on: ubuntu-latest
-    environment: homologacao
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1.4.6
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+  # Comentado para teste do PR
+  # Homologacao:
+  #   needs: Build
+  #   runs-on: ubuntu-latest
+  #   environment: homologacao
+  #   steps:
+  #     - name: Azure Login
+  #       uses: azure/login@v1.4.6
+  #       with:
+  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Create Container App Environment (if not exists)
-        run: |
-          if ! az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
-            echo "Creating Container App Environment..."
-            az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
-            
-            # Simple wait for environment
-            echo "Waiting for environment provisioning..."
-            sleep 60
-          fi
+  #     - name: Create Container App Environment (if not exists)
+  #       run: |
+  #         if ! az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
+  #           echo "Creating Container App Environment..."
+  #           az containerapp env create --name "rbb-website-hml" --resource-group "rbb-website-rg" --location "Brazil South"
+  #           
+  #           # Simple wait for environment
+  #           echo "Waiting for environment provisioning..."
+  #           sleep 60
+  #         fi
 
-      - name: Deploy to Homologacao
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.Build.outputs.image-tag }}
-          containerAppName: 'website-rbbsolucoes-hml'
-          resourceGroup: 'rbb-website-rg'
-          containerAppEnvironment: 'rbb-website-hml'
-          targetPort: '8080'
-          ingress: 'external'
+  #     - name: Deploy to Homologacao
+  #       uses: azure/container-apps-deploy-action@v1
+  #       with:
+  #         imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.Build.outputs.image-tag }}
+  #         containerAppName: 'website-rbbsolucoes-hml'
+  #         resourceGroup: 'rbb-website-rg'
+  #         containerAppEnvironment: 'rbb-website-hml'
+  #         targetPort: '8080'
+  #         ingress: 'external'
 
-      - name: Configure Environment Variables
-        run: |
-          az containerapp update \
-            --name 'website-rbbsolucoes-hml' \
-            --resource-group 'rbb-website-rg' \
-            --cpu 0.25 \
-            --memory 0.5Gi \
-            --min-replicas 1 \
-            --max-replicas 3 \
-            --set-env-vars \
-              ASPNETCORE_ENVIRONMENT=Staging \
-              mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING_HML }}" \
-              mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME_HML }}" \
-              basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
-              basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
+  #     - name: Configure Environment Variables
+  #       run: |
+  #         az containerapp update \
+  #           --name 'website-rbbsolucoes-hml' \
+  #           --resource-group 'rbb-website-rg' \
+  #           --cpu 0.25 \
+  #           --memory 0.5Gi \
+  #           --min-replicas 1 \
+  #           --max-replicas 3 \
+  #           --set-env-vars \
+  #             ASPNETCORE_ENVIRONMENT=Staging \
+  #             mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING_HML }}" \
+  #             mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME_HML }}" \
+  #             basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
+  #             basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
 
-  Producao:
-    needs: [Build, Homologacao]
-    runs-on: ubuntu-latest
-    environment: producao
-    steps:
-      - name: Azure Login
-        uses: azure/login@v1.4.6
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+  # Comentado para teste do PR
+  # Producao:
+  #   needs: [Build, Homologacao]
+  #   runs-on: ubuntu-latest
+  #   environment: producao
+  #   steps:
+  #     - name: Azure Login
+  #       uses: azure/login@v1.4.6
+  #       with:
+  #         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Create Container App Environment (if not exists)
-        run: |
-          if ! az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
-            echo "Creating Container App Environment..."
-            az containerapp env create --name "rbb-website-prod" --resource-group "rbb-website-rg" --location "Brazil South"
-            
-            # Simple wait for environment
-            echo "Waiting for environment provisioning..."
-            sleep 60
-          fi
+  #     - name: Create Container App Environment (if not exists)
+  #       run: |
+  #         if ! az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" >/dev/null 2>&1; then
+  #           echo "Creating Container App Environment..."
+  #           az containerapp env create --name "rbb-website-prod" --resource-group "rbb-website-rg" --location "Brazil South"
+  #           
+  #           # Simple wait for environment
+  #           echo "Waiting for environment provisioning..."
+  #           sleep 60
+  #         fi
 
-      - name: Deploy to Producao
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.Build.outputs.image-tag }}
-          containerAppName: 'website-rbbsolucoes'
-          resourceGroup: 'rbb-website-rg'
-          containerAppEnvironment: 'rbb-website-prod'
-          targetPort: '8080'
-          ingress: 'external'
+  #     - name: Deploy to Producao
+  #       uses: azure/container-apps-deploy-action@v1
+  #       with:
+  #         imageToDeploy: rabberto/website-rbbsolucoes:${{ needs.Build.outputs.image-tag }}
+  #         containerAppName: 'website-rbbsolucoes'
+  #         resourceGroup: 'rbb-website-rg'
+  #         containerAppEnvironment: 'rbb-website-prod'
+  #         targetPort: '8080'
+  #         ingress: 'external'
 
-      - name: Configure Environment Variables
-        run: |
-          az containerapp update \
-            --name 'website-rbbsolucoes' \
-            --resource-group 'rbb-website-rg' \
-            --cpu 0.5 \
-            --memory 1.0Gi \
-            --min-replicas 2 \
-            --max-replicas 5 \
-            --set-env-vars \
-              ASPNETCORE_ENVIRONMENT=Production \
-              mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING }}" \
-              mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
-              basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
-              basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
+  #     - name: Configure Environment Variables
+  #       run: |
+  #         az containerapp update \
+  #           --name 'website-rbbsolucoes' \
+  #           --resource-group 'rbb-website-rg' \
+  #           --cpu 0.5 \
+  #           --memory 1.0Gi \
+  #           --min-replicas 2 \
+  #           --max-replicas 5 \
+  #           --set-env-vars \
+  #             ASPNETCORE_ENVIRONMENT=Production \
+  #             mongoDbSettings__connectionString="${{ secrets.MONGODB_CONNECTION_STRING }}" \
+  #             mongoDbSettings__databaseName="${{ secrets.MONGODB_DATABASE_NAME }}" \
+  #             basicAuth__username="${{ secrets.BASIC_AUTH_USERNAME }}" \
+  #             basicAuth__password="${{ secrets.BASIC_AUTH_PASSWORD }}"
 
   Create-Main-PR:
-    needs: [Build, Homologacao, Producao]
+    needs: [Build] # Removemos Homologacao e Producao que estão comentados
     runs-on: ubuntu-latest
-    environment: main-pr-approval
+    # environment: main-pr-approval # Comentado para teste rápido
     if: github.ref == 'refs/heads/develop' || contains(github.ref, 'release/')
     steps:
       - name: Checkout develop
@@ -181,42 +186,31 @@ jobs:
           LAST_COMMIT_MSG=$(git log -1 --pretty=format:"%s")
           IMAGE_TAG="${{ needs.Build.outputs.image-tag }}"
           
-          # Create labels if they don't exist
-          gh label create "production-release" --description "Automated production release" --color "0E8A16" --force || true
-          gh label create "auto-generated" --description "Automatically generated PR" --color "B60205" --force || true
-          
-          # Create PR body with deployment information
+          # Create PR body with deployment information (sem labels por enquanto)
           PR_BODY=$(cat << EOF
-          ## 🚀 Production Deployment Completed
+          ## 🚀 Production Deployment Completed (TESTE)
           
-          This PR contains changes that have been successfully deployed to production.
+          This PR contains changes that have been successfully tested.
           
           ### 📦 Deployment Details
           - **Docker Image**: \`rabberto/website-rbbsolucoes:${IMAGE_TAG}\`
-          - **Homologação**: ✅ Deployed successfully
-          - **Produção**: ✅ Deployed successfully
-          - **MongoDB Atlas**: ✅ Configured
+          - **Build**: ✅ Completed successfully
+          - **MongoDB Atlas**: ⏭️ Skipped for test
           
           ### 📋 Changes
           - ${LAST_COMMIT_MSG}
           
-          ### 🔗 Environments
-          - **Homologação**: https://website-rbbsolucoes-hml.thankfulocean-849de4dd.brazilsouth.azurecontainerapps.io
-          - **Produção**: https://website-rbbsolucoes.thankfulocean-849de4dd.brazilsouth.azurecontainerapps.io
-          
           ### ✅ Ready for Main
-          All tests passed and production deployment successful. Ready to merge to main branch.
+          Build completed successfully. Ready to merge to main branch.
           EOF
           )
           
-          # Create the pull request
+          # Create the pull request SEM LABELS
           gh pr create \
-            --title "🚀 Production Release ${IMAGE_TAG} - Deploy to Main" \
+            --title "🚀 Test Release ${IMAGE_TAG} - Deploy to Main" \
             --body "$PR_BODY" \
             --base main \
-            --head develop \
-            --label "production-release" \
-            --label "auto-generated"
+            --head develop
             
           echo "✅ Pull request created successfully!"
         env:
@@ -234,16 +228,16 @@ jobs:
           # Add comment to existing PR
           IMAGE_TAG="${{ needs.Build.outputs.image-tag }}"
           COMMENT_BODY=$(cat << EOF
-          ## 🔄 New Production Deployment
+          ## 🔄 New Test Build
           
           **Docker Image**: \`rabberto/website-rbbsolucoes:${IMAGE_TAG}\`
           **Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           
-          ✅ Production deployment completed successfully!
+          ✅ Build completed successfully!
           EOF
           )
           
           gh pr comment $PR_NUMBER --body "$COMMENT_BODY"
-          echo "✅ Existing PR updated with deployment information!"
+          echo "✅ Existing PR updated with build information!"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
