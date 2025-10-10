@@ -1,0 +1,31 @@
+name: Debug MongoDB IP
+
+on:
+  workflow_dispatch:    
+
+jobs:
+  Debug-MongoDB-Access:
+    runs-on: ubuntu-latest
+    steps:
+      - name: MongoDB Atlas - Enable 0.0.0.0/0 Temporarily
+        run: |
+          echo "=== Installing MongoDB Atlas CLI ==="
+          curl -fsSL https://pgp.mongodb.com/server-7.0.asc | sudo gpg --dearmor -o /usr/share/keyrings/mongodb-server-7.0.gpg
+          echo "deb [ signed-by=/usr/share/keyrings/mongodb-server-7.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-atlas-cli
+          
+          echo "=== Configuring Atlas CLI ==="
+          atlas config set public_api_key "${{ secrets.MONGODB_ATLAS_PUBLIC_KEY }}"
+          atlas config set private_api_key "${{ secrets.MONGODB_ATLAS_PRIVATE_KEY }}"
+          atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
+          atlas config set silence_storage_warning true
+          
+          echo "=== Current access list ==="
+          atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to get access list"
+          
+          echo "=== Adding 0.0.0.0/0 temporarily to fix connection ==="
+          atlas accessLists create "0.0.0.0/0" --type ipAddress --comment "TEMPORARY DEBUG - Allow all IPs to test Container Apps connectivity $(date)" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "0.0.0.0/0 already exists"
+          
+          echo "=== Updated access list ==="
+          atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to get updated access list"
