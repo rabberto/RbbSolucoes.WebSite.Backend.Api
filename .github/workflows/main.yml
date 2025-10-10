@@ -133,9 +133,26 @@ jobs:
         id: get-ips-hml
         run: |
           echo "=== Getting Container App Environment Outbound IPs ==="
-          OUTBOUND_IPS=$(az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" --query "properties.staticIp" -o tsv)
-          echo "Homologacao Outbound IP: $OUTBOUND_IPS"
-          echo "hml_ip=$OUTBOUND_IPS" >> $GITHUB_OUTPUT
+          echo "Checking static IP..."
+          STATIC_IP=$(az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" --query "properties.staticIp" -o tsv)
+          echo "Static IP: $STATIC_IP"
+          
+          echo "Checking outbound IP addresses..."
+          OUTBOUND_IPS=$(az containerapp env show --name "rbb-website-hml" --resource-group "rbb-website-rg" --query "properties.outboundSettings.outboundIpAddresses" -o tsv 2>/dev/null || echo "NotAvailable")
+          echo "Outbound IPs: $OUTBOUND_IPS"
+          
+          echo "Checking if Container App is running..."
+          APP_STATUS=$(az containerapp show --name "website-rbbsolucoes-hml" --resource-group "rbb-website-rg" --query "properties.runningStatus" -o tsv 2>/dev/null || echo "NotDeployed")
+          echo "App Status: $APP_STATUS"
+          
+          # Use static IP as primary
+          if [ "$STATIC_IP" != "null" ] && [ "$STATIC_IP" != "" ]; then
+            echo "Using static IP: $STATIC_IP"
+            echo "hml_ip=$STATIC_IP" >> $GITHUB_OUTPUT
+          else
+            echo "No static IP available, using fallback"
+            echo "hml_ip=NotAvailable" >> $GITHUB_OUTPUT
+          fi
 
       - name: Configure MongoDB Atlas Network Access - Homologacao
         if: ${{ vars.ENABLE_MONGODB_ATLAS == 'true' }}
@@ -153,10 +170,29 @@ jobs:
           atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
           atlas config set silence_storage_warning true
           
-          # Adicionar IP ao Atlas
+          # Verificar IP obtido
           HML_IP="${{ steps.get-ips-hml.outputs.hml_ip }}"
-          echo "Adding IP $HML_IP to MongoDB Atlas..."
-          atlas accessLists create $HML_IP --type ipAddress --comment "Container App Homologacao - Auto added by CI/CD" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists or error occurred"
+          echo "IP to be added: $HML_IP"
+          
+          if [ "$HML_IP" != "NotAvailable" ] && [ "$HML_IP" != "null" ] && [ "$HML_IP" != "" ]; then
+            echo "=== Current access list before adding IP ==="
+            atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list current access list"
+            
+            echo "=== Adding IP $HML_IP to MongoDB Atlas ==="
+            atlas accessLists create $HML_IP --type ipAddress --comment "Container App Homologacao - Auto added by CI/CD $(date)" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists or error occurred"
+            
+            echo "=== Waiting for IP to be active ==="
+            sleep 10
+            
+            echo "=== Updated access list after adding IP ==="
+            atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list updated access list"
+            
+            echo "=== Testing connectivity from Container App ==="
+            echo "IP $HML_IP should now have access to MongoDB Atlas"
+          else
+            echo "ERROR: No valid IP address obtained. Cannot configure MongoDB Atlas access."
+            echo "This means the Container App may not have network connectivity to MongoDB."
+          fi
 
   Producao:
     needs: [Build, Homologacao]
@@ -237,9 +273,26 @@ jobs:
         id: get-ips-prod
         run: |
           echo "=== Getting Container App Environment Outbound IPs ==="
-          OUTBOUND_IPS=$(az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" --query "properties.staticIp" -o tsv)
-          echo "Producao Outbound IP: $OUTBOUND_IPS"
-          echo "prod_ip=$OUTBOUND_IPS" >> $GITHUB_OUTPUT
+          echo "Checking static IP..."
+          STATIC_IP=$(az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" --query "properties.staticIp" -o tsv)
+          echo "Static IP: $STATIC_IP"
+          
+          echo "Checking outbound IP addresses..."
+          OUTBOUND_IPS=$(az containerapp env show --name "rbb-website-prod" --resource-group "rbb-website-rg" --query "properties.outboundSettings.outboundIpAddresses" -o tsv 2>/dev/null || echo "NotAvailable")
+          echo "Outbound IPs: $OUTBOUND_IPS"
+          
+          echo "Checking if Container App is running..."
+          APP_STATUS=$(az containerapp show --name "website-rbbsolucoes" --resource-group "rbb-website-rg" --query "properties.runningStatus" -o tsv 2>/dev/null || echo "NotDeployed")
+          echo "App Status: $APP_STATUS"
+          
+          # Use static IP as primary
+          if [ "$STATIC_IP" != "null" ] && [ "$STATIC_IP" != "" ]; then
+            echo "Using static IP: $STATIC_IP"
+            echo "prod_ip=$STATIC_IP" >> $GITHUB_OUTPUT
+          else
+            echo "No static IP available, using fallback"
+            echo "prod_ip=NotAvailable" >> $GITHUB_OUTPUT
+          fi
 
       - name: Configure MongoDB Atlas Network Access - Producao
         if: ${{ vars.ENABLE_MONGODB_ATLAS == 'true' }}
@@ -257,7 +310,26 @@ jobs:
           atlas config set project_id "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}"
           atlas config set silence_storage_warning true
           
-          # Adicionar IP ao Atlas
+          # Verificar IP obtido
           PROD_IP="${{ steps.get-ips-prod.outputs.prod_ip }}"
-          echo "Adding IP $PROD_IP to MongoDB Atlas..."
-          atlas accessLists create $PROD_IP --type ipAddress --comment "Container App Producao - Auto added by CI/CD" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists or error occurred"
+          echo "IP to be added: $PROD_IP"
+          
+          if [ "$PROD_IP" != "NotAvailable" ] && [ "$PROD_IP" != "null" ] && [ "$PROD_IP" != "" ]; then
+            echo "=== Current access list before adding IP ==="
+            atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list current access list"
+            
+            echo "=== Adding IP $PROD_IP to MongoDB Atlas ==="
+            atlas accessLists create $PROD_IP --type ipAddress --comment "Container App Producao - Auto added by CI/CD $(date)" --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "IP already exists or error occurred"
+            
+            echo "=== Waiting for IP to be active ==="
+            sleep 10
+            
+            echo "=== Updated access list after adding IP ==="
+            atlas accessLists list --projectId "${{ secrets.MONGODB_ATLAS_PROJECT_ID }}" || echo "Failed to list updated access list"
+            
+            echo "=== Testing connectivity from Container App ==="
+            echo "IP $PROD_IP should now have access to MongoDB Atlas"
+          else
+            echo "ERROR: No valid IP address obtained. Cannot configure MongoDB Atlas access."
+            echo "This means the Container App may not have network connectivity to MongoDB."
+          fi
